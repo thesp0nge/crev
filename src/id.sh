@@ -56,15 +56,16 @@ case "$1" in
         ;;
     trust)
 
-        if [ $# -ne 3 ]; then
-            echo "usage: id.sh trust [low|medium|high] 'the crev id you want to trust'"
+        if [ $# -ne 4 ]; then
+            echo "usage: id.sh trust [low|medium|high] 'the crev id you want to trust' 'crev id proof url'"
             exit -2
         fi
 
 
-        regex='[A-Za-z0-9]{16}'
+        regex_id='[A-Za-z0-9]{16}'
         LEVEL=$2
         ID=$3
+        URL=$4
 
         if [[ "$LEVEL" != "low" && "$LEVEL" != "medium" && "$LEVEL" != "high" ]]; then
             echo "[!] unknown level of trust"
@@ -72,9 +73,18 @@ case "$1" in
             exit -2
         fi
 
-        if [[ $ID =~ regex ]]; then
+        if [[ $ID =~ regex_id ]]; then
             echo "[!] invalid id. It should be a 16 alphanumeric characters"
             exit -2
+        fi
+
+        regex_url='(https?|ftp|file|ssh)://[-[:alnum:]\+&@#/%?=~_|!:,.;]*[-[:alnum:]\+&@#/%=~_|]'
+
+        if [[ ! $URL =~ $regex_url ]]
+        then
+            echo "invalid url: $URL"
+            echo "usage: id.sh trust [low|medium|high] 'the crev id you want to trust' 'crev id proof url'"
+            exit -4
         fi
 
         if [ -e "$TRUST_ROOT/$ID" ]; then
@@ -94,9 +104,9 @@ case "$1" in
             exit -2
         fi
 
-        echo "# Trust for $ID <missing url, please add it>" > $TRUST_ROOT/$ID
+        echo "# Trust for $ID" > $TRUST_ROOT/$ID
         echo "trust: $LEVEL" >> $TRUST_ROOT/$ID
-        echo "# url: " >> $TRUST_ROOT/$ID
+        echo "url: $URL" >> $TRUST_ROOT/$ID
 
         $GPG $GPG_FLAGS --clearsign $TRUST_ROOT/$ID
         rm $TRUST_ROOT/$ID
