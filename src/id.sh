@@ -17,7 +17,7 @@ function current {
 }
 
 if [ $# -eq 0 ]; then
-    echo "usage: id.sh [ current | new | set-url | trust ]"
+    echo "usage: id.sh [ current | new | set-url | trust | trusted ]"
     exit 0
 fi
 
@@ -27,7 +27,35 @@ case "$1" in
         echo "$ID $URL"
         ;;
 
+    trusted)
+        # show user id trust network
+        if [ ! -d $TRUST_ROOT ]; then
+            echo "[!] your config is missing $TRUST_ROOT directory. Please create it with config command"
+            exit -2
+        fi
+        FILES="$TRUST_ROOT/*"
+        for f in $FILES
+        do
+            if [ -e "$f" ]; then
+                CHECK=`$GPG $GPG_FLAGS --verify $f > /dev/null 2> /dev/null`
+                if [ $? -eq 0 ]; then
+                    ID=`basename $f`
+                    TRUST=`cat $f | grep trust | cut -f 2 -d ":" | tr -d " "`
+                    URL=`cat $f | grep "url:" | cut -f 2 -d ":" | tr -d " "`
+                    echo -e "$ID\t$TRUST\t$URL"
+                else
+                    echo "[!] the trust file is corrupted. I will remove it"
+                    rm $f
+                fi
+            fi
+        done
+
+        exit 0
+
+
+        ;;
     trust)
+
         if [ $# -ne 3 ]; then
             echo "usage: id.sh trust [low|medium|high] 'the crev id you want to trust'"
             exit -2
