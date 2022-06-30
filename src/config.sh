@@ -4,6 +4,7 @@
 #
 CONFIG_ROOT="$HOME/.local/share/crev/"
 PROOF_ROOT=$CONFIG_ROOT"proofs/"
+TRUST_ROOT=$CONFIG_ROOT"trusts/"
 
 IDENTITY_FILE="$CONFIG_ROOT/.identity"
 IDENTITY_KEYRING="$CONFIG_ROOT/.crev.keyring"
@@ -17,6 +18,10 @@ function config_create_root_dir {
 
 function config_create_proof_dir {
     mkdir -p $PROOF_ROOT
+}
+
+function config_create_trust_dir {
+    mkdir -p $TRUST_ROOT
 }
 
 function config_create_keypair {
@@ -48,6 +53,7 @@ if [ `basename $0` == "config.sh" ]; then
     # we are not sourced from another file...  setting up config
     config_create_root_dir
     config_create_proof_dir
+    config_create_trust_dir
 
     echo "[*] config ok."
 fi
