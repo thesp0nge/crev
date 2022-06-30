@@ -7,11 +7,11 @@ function current {
         echo "[!] identity file not found. Creating a new one"
         config_create_identity_file
     fi
-    ID=`cat $IDENTITY_FILE | cut -f1`
-    URL=`cat $IDENTITY_FILE | cut -f2`
+    MY_ID=`cat $IDENTITY_FILE | cut -f1`
+    MY_URL=`cat $IDENTITY_FILE | cut -f2`
 
-    if [ $URL == "none" ]; then
-        URL="<no proof repository set>"
+    if [ $MY_URL == "none" ]; then
+        MY_URL="<no proof repository set>"
     fi
     return 0
 }
@@ -24,15 +24,29 @@ fi
 case "$1" in
     current)
         current
-        echo "$ID $URL"
+        echo "$MY_ID $MY_URL"
         ;;
 
     trusted)
         # show user id trust network
+        # This command will create also a signed file contaning the whole
+        # trusted network for a given user, as described in
+        # https://github.com/crev-dev/cargo-crev/blob/master/cargo-crev/src/doc/trust.md
         if [ ! -d $TRUST_ROOT ]; then
             echo "[!] your config is missing $TRUST_ROOT directory. Please create it with config command"
             exit -2
         fi
+
+
+        TRUSTED_CONTENT="version: -1"$'\n'
+        TRUSTED_CONTENT+="date: \"`date -Ins | tr "," "."`\""$'\n'
+        TRUSTED_CONTENT+="from:"$'\n'
+        TRUSTED_CONTENT+=$'\t'"id-type: crev"$'\n'
+        current
+        TRUSTED_CONTENT+=$'\t'"id: $MY_ID"$'\n'
+        TRUSTED_CONTENT+=$'\t'"url: $MY_URL"$'\n'
+        TRUSTED_CONTENT+="ids:"$'\n'
+
         FILES="$TRUST_ROOT/*"
         for f in $FILES
         do
@@ -42,6 +56,11 @@ case "$1" in
                     ID=`basename $f`
                     TRUST=`cat $f | grep "trust:" | cut -f 2 -d ":" | tr -d " "`
                     URL=`cat $f | grep "url:" | cut -f2- -d ":" | tr -d " "`
+                    TRUSTED_CONTENT+=$'\t'"- id:"$'\n'
+                    TRUSTED_CONTENT+=$'\t\t'"id: $ID"$'\n'
+                    TRUSTED_CONTENT+=$'\t\t'"url: $URL"$'\n'
+                    TRUSTED_CONTENT+=$'\t\t'"trust: $TRUST"$'\n'
+
                     echo -e "$ID\t$TRUST\t$URL"
                 else
                     echo "[!] the trust file is corrupted. I will remove it"
@@ -49,6 +68,10 @@ case "$1" in
                 fi
             fi
         done
+        echo "$TRUSTED_CONTENT" > "$TRUST_ROOT/$MY_ID.wot"
+        $GPG $GPG_FLAGS --clearsign "$TRUST_ROOT/$MY_ID.wot"
+        rm "$TRUST_ROOT/$MY_ID.wot"
+        mv "$TRUST_ROOT/$MY_ID.wot.asc" "$TRUST_ROOT/$MY_ID.wot"
 
         exit 0
 
