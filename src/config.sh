@@ -14,6 +14,7 @@ GPG_FLAGS="--no-default-keyring --keyring $IDENTITY_KEYRING"
 
 function config_create_root_dir {
     mkdir -p $CONFIG_ROOT
+    chmod -R go-rx $CONFIG_ROOT
 }
 
 function config_create_proof_dir {
