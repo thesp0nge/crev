@@ -17,6 +17,7 @@ function current {
 }
 
 if [ $# -eq 0 ]; then
+    echo "usage: id.sh [ current | new | set-url ]"
     exit 0
 fi
 
@@ -26,9 +27,27 @@ case "$1" in
         echo "$ID $URL"
         ;;
 
+    set-url)
+        if [ $# -ne 2 ]; then
+            echo "usage: id.sh set-utl 'proof repository url'"
+            exit -2
+        fi
+
+        regex='(https?|ftp|file|ssh)://[-[:alnum:]\+&@#/%?=~_|!:,.;]*[-[:alnum:]\+&@#/%=~_|]'
+        PROOF_URL=$2
+
+        if [[ ! $PROOF_URL =~ $regex ]]
+        then
+            echo "invalid url: $PROOF_URL"
+            echo "usage: id.sh new --url proof repository url"
+            exit -4
+        fi
+
+        config_create_identity_file $PROOF_URL
+        ;;
     new)
         if [ $# -ne 3 ]; then
-            echo "usage: id.sh new --url proof repository url"
+            echo "usage: id.sh new --url 'proof repository url'"
             exit -2
         fi
 
